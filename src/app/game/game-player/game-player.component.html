@@ -1,0 +1,18 @@
+<!-- <renderer #renderer [width]="w" [height]="h">
+    <home-scene [renderer]="renderer" (stageUpdated)="homeSceneReady($event)">
+
+        <sprite [x]="w * 0.5" [y]="h * 0.6" imgUrl="/assets/char.png" *ngIf="homeScene" scale="1" [container]="homeScene.layers.hud"></sprite>
+
+    </home-scene>
+</renderer> -->
+<div *ngFor="let character of characters">
+
+    {{ character | json }}<br/>
+    <af-character
+        [(style.top)]="character.x"
+        [(style.top)]="character.y"
+        [character]="character"
+        (action)="onAction($event, character)"
+        >
+    </af-character>
+</div>
