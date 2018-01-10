@@ -1,6 +1,8 @@
 import { 
   Component, 
-  OnInit, 
+  OnInit,
+  AfterViewInit,
+  AfterViewChecked,
   Input, 
   ViewChild, 
   ElementRef, 
@@ -8,7 +10,7 @@ import {
   Output
 } from '@angular/core';
 import { Direction } from '../meta/direction.enum';
-import { Action } from '../meta/action.enum';
+import { getAction, Action, Actions, SPRITE } from '../meta/actions.data';
 import { HotkeysService, Hotkey } from 'angular2-hotkeys';
 import { Character } from '../meta/character.class';
 
@@ -24,14 +26,11 @@ export class CharacterComponent implements OnInit {
   private _canvasContext: CanvasRenderingContext2D;
   private _sprite;
   
-  private _spriteWidth = 832;
-  private _spriteHeight = 1344;
-  
   private _rows = 21;
   private _cols = 13;
 
-  private _width = this._spriteWidth / this._cols;
-  private _height = this._spriteHeight / this._rows;
+  private _width = SPRITE.width / this._cols;
+  private _height = SPRITE.height / this._rows;
 
   private _currentFrame = 0;
   private _frameCount = 8;
@@ -43,7 +42,7 @@ export class CharacterComponent implements OnInit {
     6, 6, 6, 6,
     13, 13, 13, 13,
     6
-  ]
+  ];
 
   private _x = 0;
   private _y = 0;
@@ -51,10 +50,39 @@ export class CharacterComponent implements OnInit {
   private _srcX = 0;
   private _srcY = 0;
 
-  private _character: Character;
+  public _character: Character;
+
+  private _isMe = false;
+  private set isMe(value: boolean) {
+    if (!!value) this.initShortkeys();
+    this._isMe = value;
+  };
+
+   _direction: Direction = Direction.RIGHT;
+  set direction(action: Action) {
+    // switch (action) {
+    //   case Action.CAST_UP:
+    //   case Action.WALK_UP:
+    //     this._direction = Direction.UP;
+    //     break;
+    //   case Action.CAST_DOWN:
+    //   case Action.WALK_DOWN:
+    //     this._direction = Direction.DOWN;
+    //     break;
+    //   case Action.CAST_RIGHT:
+    //   case Action.WALK_RIGHT:
+    //     this._direction = Direction.RIGHT;
+    //     break;
+    //   case Action.CAST_LEFT:
+    //   case Action.WALK_LEFT:
+    //     this._direction = Direction.LEFT;
+    //     break;
+    //   default:
+    //     break;
+    // }
+  }
 
   @Output() action = new EventEmitter<Action>();
-
   @ViewChild('canvas') canvas: ElementRef;
 
   @Input() set character(value: Character) {
@@ -62,20 +90,37 @@ export class CharacterComponent implements OnInit {
     this._sprite = new Image();
     this._sprite.src = this._spriteUrl;
 
+    this.isMe = (value.id === 'adrien');
+
     this._character = value;
   }
 
-  @Input() direction: Direction = Direction.Right;
-  
-  constructor(private _hotkeysService: HotkeysService) {
-
-  }
+  constructor(private _hotkeysService: HotkeysService) {}
 
   ngOnInit() {
     this.canvas.nativeElement.width = this._width;
     this.canvas.nativeElement.height = this._height;
     this._canvasContext = this.canvas.nativeElement.getContext('2d');
+    setTimeout(() => {
+      this.action.emit(Action.WALK_RIGHT)
+      this.draw(Action.WALK_RIGHT);
+    }, 0);
+  }
 
+  updateFrame(action: string) {
+    this._currentFrame = ++this._currentFrame % this._framePerRow[action];
+    this._srcX = this._currentFrame * this._width;
+    this._srcY = action * this._height;
+  }
+
+  draw(action: Action): void {
+    this.updateFrame(action);
+    this.direction = action;
+    this._canvasContext.clearRect(this._x, this._y, this._width, this._height);
+    this._canvasContext.drawImage(this._sprite, this._srcX, this._srcY, this._width, this._height, this._x, this._y, this._width, this._height);
+  }
+
+  initShortkeys() {
     this._hotkeysService.add(new Hotkey('z', (event: KeyboardEvent): boolean => {
       this.action.emit(Action.WALK_UP);
       this.draw(Action.WALK_UP);
@@ -100,19 +145,15 @@ export class CharacterComponent implements OnInit {
       return true;
     }));
 
-    this.draw(Action.WALK_RIGHT);
-  }
+    this._hotkeysService.add(new Hotkey('space', (event: KeyboardEvent): boolean => {
+      this.draw(Action.SLASH_RIGHT);
+      return true;
+    }));
 
-  updateFrame(action: Action) {
-    this._currentFrame = ++this._currentFrame % this._frameCount;
-    this._srcX = this._currentFrame * this._width;
-    this._srcY = action * this._height;
-  }
-
-  draw(action: Action): void {
-    this.updateFrame(action);
-    this._canvasContext.clearRect(this._x, this._y, this._width, this._height);
-    this._canvasContext.drawImage(this._sprite, this._srcX, this._srcY, this._width, this._height, this._x, this._y, this._width, this._height);
+    this._hotkeysService.add(new Hotkey('enter', (event: KeyboardEvent): boolean => {
+      this.draw(Action.CAST_RIGHT);
+      return true;
+    }));
   }
 
 }

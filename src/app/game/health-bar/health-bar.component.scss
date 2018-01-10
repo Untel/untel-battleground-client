@@ -1,0 +1,23 @@
+$health-bar-height: 6px;
+$health-bar-radius: $health-bar-height / 2;
+$health-lvl-4: green;
+$health-lvl-3: yellow;
+$health-lvl-2: orange;
+$health-lvl-1: red;
+
+:host() {
+    display: block;
+    width: 100%;
+    height: $health-bar-height;
+    overflow: hidden;
+    background-color: transparent;
+    border-style: solid;
+    border-width: 1px;
+    border-radius: $health-bar-radius;    
+}
+
+.character-health-point {
+    position: absolute;
+    width: 0%;
+    height: $health-bar-height;
+}
