@@ -9,6 +9,10 @@ import { CharacterComponent } from '../game/character/character.component';
 import { CharacterService } from './services/character.service';
 import { PixiModule } from '../pixi/pixi.module';
 import { HealthBarComponent } from './health-bar/health-bar.component';
+import { SocketService } from './services/socket.service';
+import { SocketIoModule, SocketIoConfig } from 'ng-socket-io';
+
+const config: SocketIoConfig = { url: 'http://localhost:3000', options: {} };
 
 const components = [
   GamePlayerComponent,
@@ -20,6 +24,7 @@ const components = [
     PixiModule,
     CommonModule,
     GameRoutingModule,
+    SocketIoModule.forRoot(config),
     HotkeyModule.forRoot(),
   ],
   declarations: [...components, HealthBarComponent],
@@ -27,6 +32,7 @@ const components = [
 
   providers: [
     CharacterService,
+    SocketService
   ],
 })
 export class GameModule { }

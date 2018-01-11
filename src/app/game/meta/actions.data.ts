@@ -1,4 +1,5 @@
-export interface Action {
+export interface ActionData {
+    key: string;
     frames: number;
     size: number;
     direction: {
@@ -9,7 +10,7 @@ export interface Action {
     }
 }
 
-export function getAction(action: Actions): Action {
+export function getAction(action: Actions): ActionData {
     return SPRITE[action];
 }
 
@@ -24,13 +25,13 @@ export enum Actions {
 }
 
 export interface Sprite {
-    cast: Action;
-    slash: Action;
-    walk: Action;
-    shortWeapon: Action;
-    bow: Action;
-    die: Action;
-    bigWeapon: Action;
+    cast: ActionData;
+    slash: ActionData;
+    walk: ActionData;
+    shortWeapon: ActionData;
+    bow: ActionData;
+    die: ActionData;
+    bigWeapon: ActionData;
 
     height: number;
     width: number;
@@ -41,6 +42,7 @@ export const SPRITE: Sprite = {
     height: 1344,
 
     cast: {
+        key: 'cast',
         frames: 7,
         size: 1,
         direction: {
@@ -52,6 +54,7 @@ export const SPRITE: Sprite = {
     },
     
     slash: {
+        key: 'slash',
         frames: 7,
         size: 1,
         direction: {
@@ -63,8 +66,9 @@ export const SPRITE: Sprite = {
     },
     
     walk: {
+        key: 'walk',
         frames: 9,
-        size: 1,        
+        size: 1,
         direction: {
             up: 8,
             left: 9,
@@ -74,8 +78,9 @@ export const SPRITE: Sprite = {
     },
 
     shortWeapon: {
+        key: 'shortWeapon',
         frames: 6,
-        size: 1,        
+        size: 1,
         direction: {
             up: 12,
             left: 13,
@@ -85,6 +90,7 @@ export const SPRITE: Sprite = {
     },
 
     bow: {
+        key: 'bow',
         frames: 13,
         size: 1,
         direction: {
@@ -96,6 +102,7 @@ export const SPRITE: Sprite = {
     },
 
     die: {
+        key: 'bow',
         size: 1,
         frames: 6,
         direction: {
@@ -107,6 +114,7 @@ export const SPRITE: Sprite = {
     },
 
     bigWeapon: {
+        key: 'bigWeapon',
         size: 3,
         frames: 8,
         direction: {

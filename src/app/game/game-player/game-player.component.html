@@ -1,5 +1,4 @@
-<div *ngFor="let character of characters">
-    {{ character | json }}<br/>
+<div *ngFor="let character of characters; trackBy: trackByFn">
     <af-character
         #charCmp
         [style.top]="character.y + 'px'"

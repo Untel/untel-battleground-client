@@ -1,7 +1,13 @@
+import { Character } from './../../../../../typescript-starter/src/character.class';
+import { PlayerMove } from './../services/socket.service';
 import { Component, OnInit } from '@angular/core';
 import { Action } from '../meta/action.enum';
 import { Character } from '../meta/character.class';
 import { CharacterComponent } from '../character/character.component';
+import { ActionData, SPRITE, Actions } from '../meta/actions.data';
+import { Direction } from '../meta/direction.enum';
+import { SocketService } from '../services/socket.service';
+import { Observable } from 'rxjs/Observable';
 
 @Component({
   selector: 'af-game-player',
@@ -12,53 +18,72 @@ export class GamePlayerComponent implements OnInit {
 
   public characters: Array<Character> = [];
 
-  constructor() { }
+  constructor(public socket: SocketService) {}
 
+  ngOnInit() {
+    this.socket.players$.subscribe((characters: Array<Character>) => {
+      console.log('New state', characters);
+      this.characters = characters;
+    });
 
-  onAction(action: Action, character: Character, component: CharacterComponent) {
-    console.log('Action: ', action, 'Character: ', character, ' Component: ', component);
-    switch (action) {
-      case Action.WALK_UP:
-        character.y--;
+    this.socket.playersMove$.subscribe((character: Character) => {
+      let playerIndex = this.characters.findIndex(c => c.id === character.id);
+      this.characters[playerIndex] = character;
+    });
+  }
+
+  trackByFn(index, item) {
+    return item.id;
+  }
+
+  onAction(data, character: Character, component: CharacterComponent) {
+    const action: ActionData = data.action;
+    const direction: Direction = data.direction;
+
+    switch (action.key) {
+      case 'walk':
+        this.playerWalk(action, direction, character, component);
+        this.socket.move(character);
         break;
-      case Action.WALK_DOWN:
-        character.y++;
-        break;
-      case Action.WALK_RIGHT:
-        character.x++;
-        break;
-      case Action.WALK_LEFT:
-        character.x--;
-        break;
+      // case Action.WALK_DOWN:
+      //   character.y++;
+      //   break;
+      // case Action.WALK_RIGHT:
+      //   character.x++;
+      //   break;
+      // case Action.WALK_LEFT:
+      //   character.x--;
+      //   break;
       default:
         break;
     }
   }
 
-  ngOnInit() {
-
-    const char1 = new Character({
-      id: 'jon',
-      spriteName: 'jon',
-      name: 'jon',
-      x: 0,
-      y: 0,
-      hp: 100,
-      hpMax: 100
-    });
-
-    const char2 = new Character({
-      id: 'adrien',
-      spriteName: 'naked',
-      name: 'Adrien',
-      x: 50,
-      y: 50,
-      hp: 50,
-      hpMax: 100
-    });
-
-    this.characters.push(char1);
-    this.characters.push(char2);    
+  playerWalk(action: ActionData, direction: Direction, character: Character, component: CharacterComponent) {
+    switch (direction) {
+      case 'up':
+        if (character.y - character.velocity >= 0) {
+          character.lastDirection = Direction.UP;
+          character.lastAction = Actions.WALK;
+          character.y -= character.velocity;
+        }
+        break;
+      case 'down':
+        if (character.y + character.velocity <= 600) {
+          character.y += character.velocity;
+        }
+        break;
+      case 'left':
+        if (character.x - character.velocity >= 0) {
+          character.x -= character.velocity;
+        }
+        break;
+      case 'right':
+        if (character.x - character.velocity <= 600) {
+          character.x += character.velocity;
+        }
+        break;
+    }
   }
 
 }

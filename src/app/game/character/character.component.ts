@@ -1,3 +1,5 @@
+import { Socket } from 'ng-socket-io';
+import { SocketService } from './../services/socket.service';
 import { 
   Component, 
   OnInit,
@@ -10,7 +12,8 @@ import {
   Output
 } from '@angular/core';
 import { Direction } from '../meta/direction.enum';
-import { getAction, Action, Actions, SPRITE } from '../meta/actions.data';
+import { Action } from '../meta/action.enum'
+import { getAction, Actions, SPRITE, ActionData } from '../meta/actions.data';
 import { HotkeysService, Hotkey } from 'angular2-hotkeys';
 import { Character } from '../meta/character.class';
 
@@ -52,62 +55,41 @@ export class CharacterComponent implements OnInit {
 
   public _character: Character;
 
-  private _isMe = false;
-  private set isMe(value: boolean) {
-    if (!!value) this.initShortkeys();
-    this._isMe = value;
-  };
+  private runningAnimation;
 
-   _direction: Direction = Direction.RIGHT;
-  set direction(action: Action) {
-    // switch (action) {
-    //   case Action.CAST_UP:
-    //   case Action.WALK_UP:
-    //     this._direction = Direction.UP;
-    //     break;
-    //   case Action.CAST_DOWN:
-    //   case Action.WALK_DOWN:
-    //     this._direction = Direction.DOWN;
-    //     break;
-    //   case Action.CAST_RIGHT:
-    //   case Action.WALK_RIGHT:
-    //     this._direction = Direction.RIGHT;
-    //     break;
-    //   case Action.CAST_LEFT:
-    //   case Action.WALK_LEFT:
-    //     this._direction = Direction.LEFT;
-    //     break;
-    //   default:
-    //     break;
-    // }
-  }
+  public direction: Direction = Direction.RIGHT;
 
-  @Output() action = new EventEmitter<Action>();
+  @Output() action = new EventEmitter<{action: ActionData, direction: Direction}>();
   @ViewChild('canvas') canvas: ElementRef;
 
   @Input() set character(value: Character) {
-    this._spriteUrl = `/assets/sprites/characters/${value.spriteName}.png`;
+    console.log('SETTING CHAR', value);
+    this._spriteUrl = `/assets/sprites/characters/${value.spriteName || 'naked'}.png`;
     this._sprite = new Image();
     this._sprite.src = this._spriteUrl;
-
-    this.isMe = (value.id === 'adrien');
-
     this._character = value;
+
+    if (this.socket.myId === value.id) {
+      this.initShortkeys();
+      this.drawAnimation(SPRITE.die, Direction.UP, false);
+    } else {
+      this.drawAnimation(SPRITE[value.lastAction], value.lastDirection, false);
+    }
+
   }
 
-  constructor(private _hotkeysService: HotkeysService) {}
+  constructor(private _hotkeysService: HotkeysService, private socket: SocketService) {}
 
   ngOnInit() {
     this.canvas.nativeElement.width = this._width;
     this.canvas.nativeElement.height = this._height;
     this._canvasContext = this.canvas.nativeElement.getContext('2d');
-    setTimeout(() => {
-      this.action.emit(Action.WALK_RIGHT)
-      this.draw(Action.WALK_RIGHT);
-    }, 0);
+    // setTimeout(() => {
+    //   this.drawAnimation(SPRITE.die, Direction.UP, false);
+    // }, 0);
   }
 
-  updateFrame(action: string) {
+  updateFrame(action: Action) {
     this._currentFrame = ++this._currentFrame % this._framePerRow[action];
     this._srcX = this._currentFrame * this._width;
     this._srcY = action * this._height;
@@ -115,43 +97,60 @@ export class CharacterComponent implements OnInit {
 
   draw(action: Action): void {
     this.updateFrame(action);
-    this.direction = action;
     this._canvasContext.clearRect(this._x, this._y, this._width, this._height);
     this._canvasContext.drawImage(this._sprite, this._srcX, this._srcY, this._width, this._height, this._x, this._y, this._width, this._height);
   }
 
+  drawAnimation(action: ActionData, direction: Direction, emit?: boolean) {
+    let i = 0;
+
+    this.direction = direction;
+
+    if (!this.runningAnimation) {
+      this.runningAnimation = setInterval( () => {
+        this._canvasContext.clearRect(this._x, this._y, this._width, this._height);
+        this._canvasContext.drawImage(this._sprite, i * this._width, action.direction[this.direction] * this._height, this._width, this._height, this._x, this._y, this._width, this._height);
+
+        if (!!emit) this.action.emit({action, direction});
+
+        i++
+        if (i >= action.frames) {
+          clearInterval(this.runningAnimation);
+          this.runningAnimation = false;
+        }
+      }, 50);
+    }
+  }
+
+
   initShortkeys() {
     this._hotkeysService.add(new Hotkey('z', (event: KeyboardEvent): boolean => {
-      this.action.emit(Action.WALK_UP);
-      this.draw(Action.WALK_UP);
+      this.drawAnimation(SPRITE.walk, Direction.UP, true);
       return true;
     }));
 
     this._hotkeysService.add(new Hotkey('s', (event: KeyboardEvent): boolean => {
-      this.action.emit(Action.WALK_DOWN);
-      this.draw(Action.WALK_DOWN);
+      this.drawAnimation(SPRITE.walk, Direction.DOWN, true);
       return true;
     }));
 
     this._hotkeysService.add(new Hotkey('q', (event: KeyboardEvent): boolean => {
-      this.action.emit(Action.WALK_LEFT);
-      this.draw(Action.WALK_LEFT);
+      this.drawAnimation(SPRITE.walk, Direction.LEFT, true);
       return true;
     }));
 
     this._hotkeysService.add(new Hotkey('d', (event: KeyboardEvent): boolean => {
-      this.action.emit(Action.WALK_RIGHT);
-      this.draw(Action.WALK_RIGHT);
+      this.drawAnimation(SPRITE.walk, Direction.RIGHT, true);
       return true;
     }));
 
     this._hotkeysService.add(new Hotkey('space', (event: KeyboardEvent): boolean => {
-      this.draw(Action.SLASH_RIGHT);
+      this.drawAnimation(SPRITE.bow, this.direction, true);
       return true;
     }));
 
     this._hotkeysService.add(new Hotkey('enter', (event: KeyboardEvent): boolean => {
-      this.draw(Action.CAST_RIGHT);
+      this.drawAnimation(SPRITE.cast, this.direction, true);
       return true;
     }));
   }
